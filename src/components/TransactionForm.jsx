@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import ExpenseForm from './ExpenseForm';
 import IncomeForm from './IncomeForm';
 
-const TransactionForm = () => {
-  const [activeTab, setActiveTab] = useState('expense'); // 'expense' or 'income'
+// Accept the onAddTransaction prop
+const TransactionForm = ({ onAddTransaction }) => {
+  const [activeTab, setActiveTab] = useState('expense');
 
+  // ... (getTabClassName function remains the same)
   const getTabClassName = (tabName) => {
     return `w-full py-2.5 text-sm font-semibold text-center rounded-lg focus:outline-none transition-colors ${
       activeTab === tabName
@@ -32,7 +34,11 @@ const TransactionForm = () => {
         </button>
       </div>
       
-      {activeTab === 'expense' ? <ExpenseForm /> : <IncomeForm />}
+      {/* Pass the onAddTransaction prop to the active form */}
+      {activeTab === 'expense' 
+        ? <ExpenseForm onAddTransaction={onAddTransaction} /> 
+        : <IncomeForm onAddTransaction={onAddTransaction} />
+      }
     </div>
   );
 };
