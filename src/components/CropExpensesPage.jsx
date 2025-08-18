@@ -1,20 +1,16 @@
 // src/components/CropExpensesPage.jsx
 import React, { useState, useMemo } from 'react';
 import TransactionForm from './TransactionForm';
-// We'll create TransactionList in a moment
-// import TransactionList from './TransactionList'; 
+import TransactionList from './TransactionList'; // 1. IMPORT THE COMPONENT
 
 const CropExpensesPage = () => {
-  const [transactions, setTransactions] = useState([]); // State for our transactions
+  const [transactions, setTransactions] = useState([]);
   const crop = { name: 'Brinjal', icon: '🍆' };
 
-  // Function to add a new transaction
   const addTransaction = (transaction) => {
-    // Adds the new transaction to the beginning of the array
     setTransactions(prevTransactions => [transaction, ...prevTransactions]);
   };
 
-  // Calculate totals using useMemo for efficiency
   const { totalIncome, totalExpenses, totalProfit } = useMemo(() => {
     const income = transactions
       .filter(t => t.type === 'income')
@@ -29,11 +25,12 @@ const CropExpensesPage = () => {
       totalExpenses: expenses,
       totalProfit: income - expenses
     };
-  }, [transactions]); // This calculation only re-runs if 'transactions' changes
+  }, [transactions]);
 
   return (
-    <div className="p-4 max-w-lg mx-auto bg-gray-50 min-h-screen">
-      {/* Header (no changes needed here) */}
+    // Add pb-8 (padding-bottom) to the main div to give some space at the end
+    <div className="p-4 max-w-lg mx-auto bg-gray-50 min-h-screen pb-8"> 
+      {/* Header (no changes) */}
       <div className="flex items-center mb-6">
         <button className="mr-4 p-2">
            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -50,7 +47,7 @@ const CropExpensesPage = () => {
         </div>
       </div>
       
-      {/* Total Profit Card (now uses dynamic state) */}
+      {/* Total Profit Card (no changes) */}
       <div className="bg-blue-100/50 border border-blue-200/50 p-6 rounded-xl shadow-sm mb-8">
         <div className="flex items-center">
           <h2 className="text-gray-600 font-medium">{crop.name} Total profit</h2>
@@ -73,13 +70,12 @@ const CropExpensesPage = () => {
         </div>
       </div>
 
-      {/* Pass the addTransaction function down to the form */}
       <div className="bg-white p-6 rounded-xl shadow-sm">
         <TransactionForm onAddTransaction={addTransaction} />
       </div>
 
-      {/* We will add the TransactionList here next */}
-      {/* <TransactionList transactions={transactions} /> */}
+      {/* 2. RENDER THE COMPONENT HERE */}
+      <TransactionList transactions={transactions} />
     </div>
   );
 };
