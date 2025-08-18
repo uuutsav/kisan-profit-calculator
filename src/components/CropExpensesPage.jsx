@@ -1,36 +1,49 @@
 // src/components/CropExpensesPage.jsx
-import React, { useMemo } from 'react'; // Removed useState
+import React, { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import TransactionForm from './TransactionForm';
 import TransactionList from './TransactionList';
+import HistoricalComparison from './HistoricalComparison'; // 1. Import the component
 import { initialCrops } from '../data';
 
-// Receive props from App.jsx
 const CropExpensesPage = ({ allTransactions, onAddTransaction }) => {
   const { cropName } = useParams();
   const crop = initialCrops.find(c => c.name === cropName) || { name: cropName, icon: '❓' };
-
-  // Get the transactions for the current crop from the prop
   const transactions = allTransactions[cropName] || [];
 
-  // The handler now calls the prop function, passing the cropName
   const addTransaction = (transaction) => {
     onAddTransaction(cropName, transaction);
   };
 
-  // The profit calculation logic remains the same, but it now
-  // depends on the 'transactions' variable derived from props.
-  const { totalIncome, totalExpenses, totalProfit } = useMemo(() => {
-    const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-    const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
-    return { totalIncome: income, totalExpenses: expenses, totalProfit: income - expenses };
-  }, [transactions]);
+  // We need to calculate totalExpenses and currentYield to pass as props.
+  // We can expand our useMemo hook for this.
+  const { totalIncome, totalExpenses, totalProfit, currentYield } = useMemo(() => {
+    let income = 0;
+    let expenses = 0;
+    let yieldFromSales = 0; // We will have to update our income form to save this data.
 
-  // The JSX part below has no major changes, except for the addTransaction prop
-  // being passed to TransactionForm. The rest of the dynamic data updates automatically.
+    transactions.forEach(t => {
+      if (t.type === 'income') {
+        income += t.amount;
+        // This assumes a 'yield' property is saved with the income transaction.
+        // We will add this in the next step.
+        yieldFromSales += t.yield || 0; 
+      } else if (t.type === 'expense') {
+        expenses += t.amount;
+      }
+    });
+    
+    return {
+      totalIncome: income,
+      totalExpenses: expenses,
+      totalProfit: income - expenses,
+      currentYield: yieldFromSales,
+    };
+  }, [transactions]);
 
   return (
     <div className="p-4 max-w-lg mx-auto bg-gray-50 min-h-screen pb-8"> 
+      {/* --- No changes to the top part of the component (Header, Profit Card) --- */}
       <div className="flex items-center mb-6">
         <Link to="/" className="mr-4 p-2">
            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -50,9 +63,7 @@ const CropExpensesPage = ({ allTransactions, onAddTransaction }) => {
       <div className="bg-blue-100/50 border border-blue-200/50 p-6 rounded-xl shadow-sm mb-8">
         <div className="flex items-center">
           <h2 className="text-gray-600 font-medium">{crop.name} Total profit</h2>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          {/* ... icon */}
         </div>
         <p className={`text-4xl font-bold mt-2 ${totalProfit >= 0 ? 'text-gray-800' : 'text-red-600'}`}>
           ₹{totalProfit.toLocaleString('en-IN')}
@@ -68,12 +79,19 @@ const CropExpensesPage = ({ allTransactions, onAddTransaction }) => {
           </div>
         </div>
       </div>
-
+      
       <div className="bg-white p-6 rounded-xl shadow-sm">
         <TransactionForm onAddTransaction={addTransaction} />
       </div>
 
       <TransactionList transactions={transactions} />
+
+      {/* 2. RENDER THE NEW COMPONENT with the required props */}
+      <HistoricalComparison 
+        cropName={crop.name}
+        totalExpenses={totalExpenses}
+        currentYield={currentYield}
+      />
     </div>
   );
 };

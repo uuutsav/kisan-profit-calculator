@@ -1,4 +1,5 @@
 // src/components/IncomeForm.jsx
+
 import React, { useState, useMemo } from 'react';
 
 const IncomeForm = ({ onAddTransaction }) => {
@@ -7,6 +8,7 @@ const IncomeForm = ({ onAddTransaction }) => {
   const [pricePerUnit, setPricePerUnit] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // useMemo will recalculate the total price only when yieldAmount or pricePerUnit changes
   const totalPrice = useMemo(() => {
     const yieldNum = parseFloat(yieldAmount);
     const priceNum = parseFloat(pricePerUnit);
@@ -14,27 +16,32 @@ const IncomeForm = ({ onAddTransaction }) => {
   }, [yieldAmount, pricePerUnit]);
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    if (totalPrice <= 0 || !date) {
-      alert("Please fill in all required fields with valid values.");
+    e.preventDefault(); // Prevent the default form submission (page reload)
+
+    // Basic validation
+    if (totalPrice <= 0 || !date || parseFloat(yieldAmount) <= 0) {
+      alert("Please fill in yield and price per kilo with valid values.");
       return;
     }
 
     const newIncome = {
-      id: Date.now(),
+      id: Date.now(), // Unique ID for the transaction
       type: 'income',
-      category: 'Sale',
+      category: 'Sale', // Category for income is typically 'Sale'
       name: name,
       amount: totalPrice,
       date: date,
+      yield: parseFloat(yieldAmount), // Crucial for historical comparison
     };
 
+    // Call the function passed down from the parent component (CropExpensesPage)
     onAddTransaction(newIncome);
 
-    // Reset form
+    // Reset the form fields for the next entry
     setName('Sale');
     setYieldAmount('');
     setPricePerUnit('');
+    setDate(new Date().toISOString().split('T')[0]);
   };
 
   return (
@@ -57,6 +64,7 @@ const IncomeForm = ({ onAddTransaction }) => {
             <input
               type="number"
               id="yield"
+              placeholder="e.g., 100"
               value={yieldAmount}
               onChange={(e) => setYieldAmount(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
@@ -71,6 +79,7 @@ const IncomeForm = ({ onAddTransaction }) => {
             <input
               type="number"
               id="price-per-kilo"
+              placeholder="e.g., 50"
               value={pricePerUnit}
               onChange={(e) => setPricePerUnit(e.target.value)}
               className="w-full p-3 pl-7 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
