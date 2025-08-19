@@ -1,26 +1,11 @@
 // src/components/HistoricalComparison.jsx
 import React, { useState } from 'react';
 
-// --- Placeholder for a real Government Data API ---
-// In a real app, you would replace this mock with a real `fetch` call to a government portal.
-const fetchHistoricalPriceData = async (cropName, year) => {
-  console.log(`Fetching price data for ${cropName} in ${year}...`);
-  // ** REPLACE THIS with a real fetch call, e.g.: **
-  // const response = await fetch(`https://api.data.gov.in/resource/...?filters[commodity]=${cropName}&filters[year]=${year}`);
-  // const data = await response.json();
-  // return { avgPrice: data.records[0].modal_price, weather: "..." };
-  
-  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-  const mockPrice = Math.floor(Math.random() * (55 - 35 + 1)) + 35;
-  const mockWeatherSummary = `The year ${year} experienced slightly above-average monsoon rains, with a dry spell in August.`;
-  return { avgPrice: mockPrice, weather: mockWeatherSummary };
-};
-// --- END Placeholder ---
-
 const HistoricalComparison = ({ cropName, totalExpenses, currentYield }) => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear() - 1);
   const [comparisonData, setComparisonData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleCompare = async () => {
     if (!currentYield || currentYield <= 0) {
@@ -30,39 +15,39 @@ const HistoricalComparison = ({ cropName, totalExpenses, currentYield }) => {
     
     setIsLoading(true);
     setComparisonData(null);
+    setError('');
 
     try {
-      // Step 1: Get historical price and weather data
-      const priceData = await fetchHistoricalPriceData(cropName, selectedYear);
-      const historicalProfit = (priceData.avgPrice * currentYield) - totalExpenses;
-
-      // Step 2: Send this data to our backend for Gemini AI analysis
-      const aiResponse = await fetch('http://localhost:3001/api/get-crop-analysis', {
+      // Send all necessary data to our single backend endpoint
+      const response = await fetch('http://localhost:3001/api/get-crop-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cropName: cropName,
           year: selectedYear,
-          historicalPrice: priceData.avgPrice,
-          historicalWeather: priceData.weather,
         }),
       });
 
-      if (!aiResponse.ok) throw new Error('AI analysis failed');
-      const aiAnalysis = await aiResponse.json();
+      const data = await response.json();
 
-      // Step 3: Combine all data and set the state to display it
+      if (!response.ok) {
+        throw new Error(data.error || 'Analysis failed');
+      }
+
+      // Calculate the historical profit on the frontend
+      const historicalProfit = (data.avgPrice * currentYield) - totalExpenses;
+
       setComparisonData({
         year: selectedYear,
-        avgPrice: priceData.avgPrice,
+        avgPrice: data.avgPrice,
         profit: historicalProfit,
-        weatherAnalysis: aiAnalysis.weather_analysis,
-        futureOutlook: aiAnalysis.future_outlook,
+        weatherAnalysis: data.weather_analysis,
+        futureOutlook: data.future_outlook,
       });
 
-    } catch (error) {
-      console.error("Comparison failed:", error);
-      alert("Could not complete the comparison. Please ensure the backend server is running.");
+    } catch (err) {
+      console.error("Comparison failed:", err);
+      setError(err.message); // Display the error to the user
     } finally {
       setIsLoading(false);
     }
@@ -76,8 +61,7 @@ const HistoricalComparison = ({ cropName, totalExpenses, currentYield }) => {
       <p className="text-sm text-gray-500 mt-1">Compare with historical data and get an AI-powered outlook.</p>
       
       <div className="flex items-end space-x-2 mt-4">
-        {/* ... (Year selection and button JSX is unchanged) ... */}
-         <div className="flex-grow">
+        <div className="flex-grow">
           <label htmlFor="year-select" className="text-sm font-medium text-gray-600">Compare with year</label>
           <select
             id="year-select"
@@ -97,12 +81,18 @@ const HistoricalComparison = ({ cropName, totalExpenses, currentYield }) => {
         </button>
       </div>
 
+      {error && (
+         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            <p><span className="font-bold">Error:</span> {error}</p>
+         </div>
+      )}
+
       {comparisonData && (
         <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
           <h3 className="font-bold text-lg text-green-800">Analysis for {comparisonData.year}</h3>
           <div className="mt-2 space-y-2 text-gray-700">
              <div className="flex justify-between">
-                <span>Avg. market price in {comparisonData.year}:</span>
+                <span>Avg. market price found:</span>
                 <span className="font-semibold">₹{comparisonData.avgPrice.toFixed(2)} / kg</span>
             </div>
             <div className="flex justify-between">
@@ -112,7 +102,6 @@ const HistoricalComparison = ({ cropName, totalExpenses, currentYield }) => {
                 </span>
             </div>
           </div>
-
           <div className="mt-4 pt-3 border-t border-green-200">
               <h4 className="font-semibold text-gray-800">AI Weather Summary</h4>
               <p className="text-sm text-gray-600 mt-1 italic">"{comparisonData.weatherAnalysis}"</p>
